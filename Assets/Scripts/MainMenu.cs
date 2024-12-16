@@ -3,54 +3,55 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.IO;
 
+// Handles the main menu functionality, including starting a new game and loading a saved game.
 public class MainMenu : MonoBehaviour
 {
+    // File Path
     private string savePath;
 
+    // UI Elements
     [Header("UI Elements")]
-    public Button loadButton; // Assign this in the Inspector to the Load button
-    public Button playButton; // Assign this in the Inspector to the Play button
+    public Button loadButton; // Button to load a saved game
+    public Button playButton; // Button to start a new game
 
-    private void Awake()
+    protected void Awake()
     {
-        // Path where the save file is stored
         savePath = Application.persistentDataPath + "/savegame.json";
     }
 
-    private void Start()
+    protected void Start()
     {
         Debug.Log($"Save directory is: {Application.persistentDataPath}");
 
-        // Always enable the Play button
-        playButton.interactable = true;
+        playButton.interactable = true; // Always enable the Play button
 
-        // Disable the Load button if no save file exists
-        if (!File.Exists(savePath))
+        // Enable or disable the Load button based on save file existence
+        if (File.Exists(savePath))
         {
-            loadButton.interactable = false; // Make the Load button unclickable
-            Debug.Log("No save file found. Load button disabled.");
+            loadButton.interactable = true;
+            Debug.Log("Save file found. Load button enabled.");
         }
         else
         {
-            loadButton.interactable = true; // Ensure Load button is interactable if save exists
-            Debug.Log("Save file found. Load button enabled.");
+            loadButton.interactable = false;
+            Debug.Log("No save file found. Load button disabled.");
         }
     }
 
+    // Starts a new game, ensuring a fresh state.
     public void OnPlayButtonClick()
     {
-        // Start a new game
-        GameLoadManager.ShouldLoadGame = false; // Ensure a fresh game
-        SceneManager.LoadScene("GameScene"); // Replace "GameScene" with your actual Game Scene name
+        GameLoadManager.ShouldLoadGame = false; // Set flag for a fresh game
+        SceneManager.LoadScene("GameScene");   // Replace "GameScene" with the actual scene name
     }
 
+    // Loads a saved game if a save file exists.
     public void OnLoadGameButtonClick()
     {
-        // Check if the save file exists before loading
         if (File.Exists(savePath))
         {
-            GameLoadManager.ShouldLoadGame = true; // Set the flag to load saved data
-            SceneManager.LoadScene("GameScene");   // Replace "GameScene" with your actual Game Scene name
+            GameLoadManager.ShouldLoadGame = true; // Set flag to load saved data
+            SceneManager.LoadScene("GameScene");   // Replace "GameScene" with the actual scene name
             Debug.Log("Save file found. Loading game...");
         }
         else

@@ -3,38 +3,29 @@ using UnityEngine;
 
 public class Soldier : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 }
 
-// Interface for a soldier
+// Interface for general soldier functionality.
 public interface ISoldier
 {
     int Cost { get; }
     int Morale { get; set; }
     Vector3 Position { get; set; }
-    int Health { get; set; } // Add health
-    void PerformAction(List<Enemy> enemies);
-    void TakeDamage(int damage); // Add damage handling
+    int Health { get; set; }
+
+    void PerformAction(List<Enemy> enemies); // Executes soldier's action on enemies.
+    void TakeDamage(int damage);            // Handles receiving damage.
 }
 
-// Interface for basic soldier
+// Interface for basic soldier functionality.
 public interface IBasicSoldier : ISoldier
 {
-    void PerformBasicAction(List<Enemy> enemies);
+    void PerformBasicAction(List<Enemy> enemies); // Executes a specific action for basic soldiers.
 }
 
-// Interface for advanced soldier
+// Interface for advanced soldier functionality.
 public interface IAdvancedSoldier : ISoldier
 {
-    void PerformAdvancedAction(List<Enemy> enemies);
+    void PerformAdvancedAction(List<Enemy> enemies); // Executes a specific action for advanced soldiers.
 }

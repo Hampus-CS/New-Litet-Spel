@@ -1,11 +1,11 @@
-using UnityEngine;
 using System.Collections.Generic;
-using System.Diagnostics;
-using Debug = UnityEngine.Debug;
+using UnityEngine;
 
+// Represents an enemy that interacts with soldiers and the game world.
 public class Enemy : MonoBehaviour
 {
-    public int Health { get; set; } = 100; // Default health
+    // Enemy Properties
+    public int Health { get; set; } = 100;
 
     public void TakeDamage(int damage)
     {
@@ -16,12 +16,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    private void Die()
-    {
-        Debug.Log("Enemy defeated.");
-        Destroy(gameObject); // Destroy the enemy GameObject
-    }
-
+    // Executes the enemy's action, targeting the nearest soldier.
     public void PerformAction(List<ISoldier> soldiers)
     {
         if (this == null) return; // Ensure the enemy is not destroyed
@@ -35,6 +30,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    // Finds the nearest soldier from a list of soldiers.
     private ISoldier FindNearestSoldier(List<ISoldier> soldiers)
     {
         ISoldier nearestSoldier = null;
@@ -42,7 +38,7 @@ public class Enemy : MonoBehaviour
 
         foreach (var soldier in soldiers)
         {
-            if (soldier == null) continue; // Skip destroyed soldiers
+            if (soldier == null || (soldier as MonoBehaviour) == null) continue;
 
             float distance = Vector3.Distance(transform.position, soldier.Position);
             if (distance < shortestDistance)
@@ -51,6 +47,13 @@ public class Enemy : MonoBehaviour
                 nearestSoldier = soldier;
             }
         }
+
         return nearestSoldier;
+    }
+
+    private void Die()
+    {
+        Debug.Log("Enemy defeated.");
+        Destroy(gameObject);
     }
 }

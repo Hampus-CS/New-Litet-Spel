@@ -1,98 +1,65 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
-using Object = UnityEngine.Object;
 
+// Manages the player's manpower, soldier purchasing, and related calculations.
 public class ManpowerManager : MonoBehaviour
 {
-    private int manpower;
-    private int supportDays;
+    // Core Variables
+    protected int manpower;
+    protected int supportDays;
 
-    private MoraleManager moraleManager;
-    private GameManager gameManager;
-
+    // References
+    protected GameManager gameManager;
     public GameObject basicSoldierPrefab;
     public GameObject advancedSoldierPrefab;
     public Transform spawnParent;
 
-    public ManpowerManager(int initialManpower, int supportDaysLimit, GameObject basicPrefab, GameObject advancedPrefab, Transform parent)
+    protected void Awake()
     {
-        manpower = initialManpower;
-        supportDays = supportDaysLimit;
-        basicSoldierPrefab = basicPrefab;
-        advancedSoldierPrefab = advancedPrefab;
-        spawnParent = parent;
+        manpower = 10000; // Default initial manpower
     }
 
-    private void Awake()
-    {
-        manpower = 10000; // Set initial manpower here
-        Debug.Log($"Manpower initialized to {manpower} in Awake.");
-    }
-
-    private void Start()
+    protected void Start()
     {
         if (gameManager == null)
         {
-            gameManager = Object.FindFirstObjectByType<GameManager>();
+            gameManager = FindFirstObjectByType<GameManager>();
             if (gameManager == null)
-            {
-                Debug.LogError("GameManager not found! Ensure it is present in the scene and properly assigned.");
-            }
-        }
-        if (manpower == 0)
-        {
-            manpower = 10000;
+                Debug.LogError("GameManager not found! Ensure it is present in the scene.");
         }
     }
 
+    // Gets the current manpower amount.
     public int GetCurrentManpower() => manpower;
 
-    public void ReduceManpower(int amount)
-    {
-        manpower = Mathf.Max(0, manpower - amount);
-    }
-
-    public bool CanAfford(int cost)
-    {
-        return manpower >= cost;
-    }
-
+    // Purchases a soldier and spawns it in the specified position.
     public void PurchaseSoldier(string type, Vector3 spawnPosition, List<ISoldier> soldierList)
     {
-        if (gameManager == null)
-        {
-            Debug.LogError("GameManager is not assigned in ManpowerManager!");
-            return;
-        }
-
-        // Proceed with soldier purchase logic...
-        int cost = type == "Basic" ? 10 : 50;
-        GameObject soldierPrefab = type == "Basic" ? basicSoldierPrefab : advancedSoldierPrefab;
+        int cost = (type == "Basic") ? 10 : 50;
+        GameObject soldierPrefab = (type == "Basic") ? basicSoldierPrefab : advancedSoldierPrefab;
 
         if (CanAfford(cost))
         {
             ReduceManpower(cost);
 
             Vector3 adjustedPosition = new Vector3(spawnPosition.x, spawnPosition.y, -1);
-            GameObject newSoldierObject = Instantiate(soldierPrefab, adjustedPosition, Quaternion.identity, spawnParent);
-            ISoldier newSoldier = newSoldierObject.GetComponent<ISoldier>();
+            var soldierObject = Instantiate(soldierPrefab, adjustedPosition, Quaternion.identity, spawnParent);
+            var soldier = soldierObject.GetComponent<ISoldier>();
 
-            if (newSoldier != null)
+            if (soldier != null)
             {
-                if (newSoldier is AdvancedSoldier advancedSoldier)
+                if (soldier is AdvancedSoldier advancedSoldier)
                 {
-                    advancedSoldier.Initialize(gameManager); // Inject GameManager
+                    advancedSoldier.Initialize(gameManager); // Inject GameManager reference
                 }
 
-                soldierList.Add(newSoldier);
+                soldierList.Add(soldier);
                 Debug.Log($"{type} soldier purchased and spawned at {spawnPosition}.");
             }
             else
             {
-                Debug.LogError("Failed to spawn soldier: Component missing.");
+                Debug.LogError("Failed to spawn soldier: Missing ISoldier component.");
             }
         }
         else
@@ -101,6 +68,7 @@ public class ManpowerManager : MonoBehaviour
         }
     }
 
+    // Calculates daily manpower changes based on morale.
     public void CalculateManpower(int moraleSummary)
     {
         if (supportDays > 0)
@@ -113,13 +81,21 @@ public class ManpowerManager : MonoBehaviour
         {
             Debug.Log("No manpower increase. Support days exhausted.");
         }
-
     }
 
+    // Checks if the player has enough manpower for a purchase.
+    public bool CanAfford(int cost) => manpower >= cost;
+
+    // Reduces manpower by a specified amount.
+    public void ReduceManpower(int amount)
+    {
+        manpower = Mathf.Max(0, manpower - amount);
+    }
+
+    // Sets the manpower to a specific value (used during loading or debugging).
     public void SetManpower(int value)
     {
         manpower = value;
         Debug.Log($"Manpower set to {manpower}.");
     }
-
 }

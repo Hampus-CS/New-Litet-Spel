@@ -1,18 +1,13 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
+// Manages the morale of soldiers and calculates morale-related impacts on gameplay.
 public class MoraleManager : MonoBehaviour
 {
-    private int moraleSummary;
+    // Core Variable
+    protected int moraleSummary;
 
-    public void AddSoldierMorale(ISoldier soldier)
-    {
-        moraleSummary += soldier.Morale;
-        Debug.Log($"Added soldier morale. Current morale summary: {moraleSummary}");
-    }
-
+    // Updates a soldier's morale and handles defecting logic if morale becomes too low.
     public void UpdateSoldierMorale(ISoldier soldier, int change)
     {
         soldier.Morale = Mathf.Clamp(soldier.Morale + change, 0, 10);
@@ -28,28 +23,40 @@ public class MoraleManager : MonoBehaviour
         }
     }
 
+    // Gets the average morale of all soldiers in the list.
     public int GetAverageMorale(List<ISoldier> soldiers)
     {
         if (soldiers.Count == 0) return 0;
+
         int totalMorale = 0;
         foreach (var soldier in soldiers)
         {
             totalMorale += soldier.Morale;
         }
+
         return totalMorale / soldiers.Count;
     }
 
+    // Adds a soldier's morale to the summary.
+    public void AddSoldierMorale(ISoldier soldier)
+    {
+        moraleSummary += soldier.Morale;
+        Debug.Log($"Added soldier morale. Current morale summary: {moraleSummary}");
+    }
+
+    // Resets the morale summary at the start of a new day.
     public void ResetSummary()
     {
         moraleSummary = 0;
     }
 
+    // Gets the total morale summary.
     public int GetSummary() => moraleSummary;
-    
+
+    // Sets the morale summary (used during loading or debugging).
     public void SetSummary(int value)
     {
         moraleSummary = value;
         Debug.Log($"Morale summary set to {moraleSummary}.");
     }
-
 }

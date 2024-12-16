@@ -1,18 +1,19 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
+// Handles saving and loading the game state to/from a JSON file.
 public class SaveHandler : MonoBehaviour
 {
-    private string savePath;
+    // File Path
+    protected string savePath;
 
-    private void Awake()
+    protected void Awake()
     {
         savePath = Application.persistentDataPath + "/savegame.json";
     }
 
+    // Saves the current game state to a JSON file.
     public void Save(GameManager gameManager, TimeManager timeManager, ManpowerManager manpowerManager, MoraleManager moraleManager)
     {
         GameState state = new GameState
@@ -31,6 +32,7 @@ public class SaveHandler : MonoBehaviour
         Debug.Log("Game saved successfully.");
     }
 
+    // Loads the game state from a JSON file.
     public GameState Load()
     {
         if (File.Exists(savePath))
@@ -40,11 +42,17 @@ public class SaveHandler : MonoBehaviour
             Debug.Log("Game loaded successfully.");
             return state;
         }
+
         Debug.LogWarning("Save file not found.");
         return null;
     }
 }
 
+/// <summary>
+/// Serializable Classes for Game State
+/// </summary>
+
+// Represents the entire game state for saving/loading.
 [System.Serializable]
 public class GameState
 {
@@ -57,6 +65,7 @@ public class GameState
     public List<EnemyState> Enemies;
 }
 
+// Represents the state of a sector.
 [System.Serializable]
 public class SectorState
 {
@@ -65,15 +74,17 @@ public class SectorState
     public int Owner;
 }
 
+// Represents the state of a soldier.
 [System.Serializable]
 public class SoldierState
 {
-    public string Type; // e.g., "Basic" or "Advanced"
+    public string Type; // "Basic" or "Advanced"
     public float[] Position;
     public int Health;
     public int Morale;
 }
 
+// Represents the state of an enemy.
 [System.Serializable]
 public class EnemyState
 {
