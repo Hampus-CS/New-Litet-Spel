@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
+using Debug = UnityEngine.Debug;
 
 public class TimeManager : MonoBehaviour
 {
@@ -77,4 +79,16 @@ public class TimeManager : MonoBehaviour
         currentTime = dayStart;
         Debug.Log($"Time reset to {currentTime} hours.");
     }
+
+    public float GetCurrentTime()
+    {
+        return currentTime;
+    }
+
+    public void SetCurrentTime(float time)
+    {
+        currentTime = time;
+        Debug.Log($"Current time set to {currentTime} hours.");
+    }
+
 }

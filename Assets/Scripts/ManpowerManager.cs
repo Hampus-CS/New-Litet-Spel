@@ -115,4 +115,11 @@ public class ManpowerManager : MonoBehaviour
         }
 
     }
+
+    public void SetManpower(int value)
+    {
+        manpower = value;
+        Debug.Log($"Manpower set to {manpower}.");
+    }
+
 }

@@ -7,6 +7,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -58,19 +59,195 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-
-        InitializeSectors(10); // Initialize sectors (10 tiles high each)
-        currentPlayerSector = sectors[0]; // Ensure the first sector is active
-        Debug.Log($"Initial active sector: {currentPlayerSector.Name}");
+        // Check if we should load a saved game
+        if (GameLoadManager.ShouldLoadGame)
+        {
+            LoadGame();
+            GameLoadManager.ShouldLoadGame = false; // Reset the flag after loading
+        }
+        else
+        {
+            // Normal game initialization
+            InitializeSectors(10); // Example: Initialize sectors
+            currentPlayerSector = sectors[0];
+            SpawnEnemiesAtDayStart(10);
+            Debug.Log($"Initial active sector: {currentPlayerSector.Name}");
+        }
 
         // Set up UI buttons
         basicSoldierButton.onClick.AddListener(() => PurchaseSoldier("Basic"));
         advancedSoldierButton.onClick.AddListener(() => PurchaseSoldier("Advanced"));
 
-        SpawnEnemiesAtDayStart(10);
-
         UpdateManpowerUI();
         StartCoroutine(DayNightCycle());
+    }
+
+    public void SaveGame()
+    {
+        SaveHandler saveHandler = FindFirstObjectByType<SaveHandler>();
+        if (saveHandler != null)
+        {
+            saveHandler.Save(this, timeManager, manpowerManager, moraleManager);
+        }
+        else
+        {
+            Debug.LogError("SaveHandler not found in the scene.");
+        }
+    }
+
+    public int GetCurrentDay() => currentDay;
+
+    public List<SectorState> GetSectorsState()
+    {
+        List<SectorState> states = new List<SectorState>();
+        foreach (Sector sector in sectors)
+        {
+            states.Add(new SectorState
+            {
+                Name = sector.Name,
+                Controlled = sector.Controlled,
+                Owner = sector.Owner
+            });
+        }
+        return states;
+    }
+
+    public List<SoldierState> GetSoldiersState()
+    {
+        List<SoldierState> states = new List<SoldierState>();
+        foreach (ISoldier soldier in soldiers)
+        {
+            states.Add(new SoldierState
+            {
+                Type = soldier is IBasicSoldier ? "Basic" : "Advanced",
+                Position = new float[] { soldier.Position.x, soldier.Position.y, soldier.Position.z },
+                Health = soldier.Health,
+                Morale = soldier.Morale
+            });
+        }
+        return states;
+    }
+
+    public List<EnemyState> GetEnemiesState()
+    {
+        List<EnemyState> states = new List<EnemyState>();
+        foreach (Enemy enemy in enemies)
+        {
+            states.Add(new EnemyState
+            {
+                Position = new float[] { enemy.transform.position.x, enemy.transform.position.y, enemy.transform.position.z },
+                Health = enemy.Health
+            });
+        }
+        return states;
+    }
+
+    public void LoadGame()
+    {
+        SaveHandler saveHandler = FindFirstObjectByType<SaveHandler>();
+        if (saveHandler != null)
+        {
+            GameState state = saveHandler.Load();
+            if (state != null)
+            {
+                // Restore game state
+                currentDay = state.CurrentDay;
+                timeManager.SetCurrentTime(state.CurrentTime);
+                manpowerManager.SetManpower(state.Manpower);
+                moraleManager.SetSummary(state.MoraleSummary);
+
+                // Restore sectors
+                foreach (var sectorState in state.Sectors)
+                {
+                    Sector sector = sectors.Find(s => s.Name == sectorState.Name);
+                    if (sector != null)
+                    {
+                        sector.Controlled = sectorState.Controlled;
+                        sector.Owner = sectorState.Owner;
+                    }
+                }
+
+                // Restore soldiers
+                soldiers.Clear();
+                foreach (var soldierState in state.Soldiers)
+                {
+                    GameObject prefab = soldierState.Type == "Basic" ? basicSoldierPrefab : advancedSoldierPrefab;
+                    GameObject soldierObject = Instantiate(
+                        prefab,
+                        new Vector3(soldierState.Position[0], soldierState.Position[1], soldierState.Position[2]),
+                        Quaternion.identity,
+                        spawnParent
+                    );
+
+                    ISoldier soldier = soldierObject.GetComponent<ISoldier>();
+                    if (soldier != null)
+                    {
+                        soldier.Health = soldierState.Health;
+                        soldier.Morale = soldierState.Morale;
+
+                        // Inject GameManager if it's an AdvancedSoldier
+                        if (soldier is AdvancedSoldier advancedSoldier)
+                        {
+                            advancedSoldier.Initialize(this); // Assign the current GameManager instance
+                        }
+
+                        soldiers.Add(soldier);
+                    }
+                    else
+                    {
+                        Debug.LogError("Failed to load soldier: ISoldier component is missing.");
+                    }
+                }
+
+                // Restore enemies
+                enemies.Clear();
+                foreach (var enemyState in state.Enemies)
+                {
+                    GameObject enemyObject = Instantiate(enemyPrefab, new Vector3(enemyState.Position[0], enemyState.Position[1], enemyState.Position[2]), Quaternion.identity, spawnParent);
+                    Enemy enemy = enemyObject.GetComponent<Enemy>();
+                    if (enemy != null)
+                    {
+                        enemy.Health = enemyState.Health;
+                        enemies.Add(enemy);
+                    }
+                }
+
+                Debug.Log("Game restored successfully.");
+            }
+        }
+    }
+
+    public void SaveAndQuit()
+    {
+        SaveHandler saveHandler = FindFirstObjectByType<SaveHandler>();
+        if (saveHandler != null)
+        {
+            saveHandler.Save(this, timeManager, manpowerManager, moraleManager);
+            Debug.Log("Game saved successfully. Exiting...");
+
+            SceneManager.LoadScene("MainMenu");
+
+            // Quit the application / playtesting
+            //Application.Quit();
+            //UnityEditor.EditorApplication.isPlaying = false;
+        }
+        else
+        {
+            Debug.LogError("SaveHandler not found in the scene.");
+        }
+    }
+
+    public void OnLoadButtonClick()
+    {
+        GameManager gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.LoadGame();
+        }
+        else
+        {
+            Debug.LogError("GameManager not found in the scene.");
+        }
     }
 
     private IEnumerator MoveCameraToSector(Sector targetSector, float duration)

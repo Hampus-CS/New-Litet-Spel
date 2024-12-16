@@ -45,4 +45,11 @@ public class MoraleManager : MonoBehaviour
     }
 
     public int GetSummary() => moraleSummary;
+    
+    public void SetSummary(int value)
+    {
+        moraleSummary = value;
+        Debug.Log($"Morale summary set to {moraleSummary}.");
+    }
+
 }
