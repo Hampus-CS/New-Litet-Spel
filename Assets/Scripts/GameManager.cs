@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
+using Debug = UnityEngine.Debug;
 
 public class GameManager : MonoBehaviour
 {
@@ -31,6 +33,8 @@ public class GameManager : MonoBehaviour
     public Transform spawnParent; // Parent for spawned units
 
     private Sector currentPlayerSector;
+    public Camera mainCamera; // Assign the main camera in the Inspector
+
 
     // UI Elements
     public TMP_Text manpowerText;
@@ -54,6 +58,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+
         InitializeSectors(10); // Initialize sectors (10 tiles high each)
         currentPlayerSector = sectors[0]; // Ensure the first sector is active
         Debug.Log($"Initial active sector: {currentPlayerSector.Name}");
@@ -66,6 +71,46 @@ public class GameManager : MonoBehaviour
 
         UpdateManpowerUI();
         StartCoroutine(DayNightCycle());
+    }
+
+    private IEnumerator MoveCameraToSector(Sector targetSector, float duration)
+    {
+        if (targetSector == null)
+        {
+            Debug.LogError("Target sector is null. Cannot move the camera.");
+            yield break;
+        }
+
+        Vector3 targetPosition = targetSector.Position + new Vector3(0, 0, -10); // Adjust Z for camera depth
+        Vector3 startPosition = mainCamera.transform.position;
+        float elapsedTime = 0;
+
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            mainCamera.transform.position = Vector3.Lerp(startPosition, targetPosition, elapsedTime / duration);
+            yield return null;
+        }
+
+        mainCamera.transform.position = targetPosition;
+        Debug.Log($"Camera moved to sector: {targetSector.Name}");
+    }
+
+    private void MoveSoldiersToSector(Sector targetSector)
+    {
+        if (targetSector == null)
+        {
+            Debug.LogError("Target sector is null. Cannot move soldiers.");
+            return;
+        }
+
+        Vector3 targetPosition = targetSector.GetBottomPosition();
+
+        foreach (var soldier in soldiers)
+        {
+            soldier.Position = targetPosition; // Update soldier's position
+            Debug.Log($"Moved soldier to sector: {targetSector.Name}");
+        }
     }
 
     private void InitializeSectors(int sectorHeight)
@@ -114,9 +159,18 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator ShowDayEndPopup()
     {
-        dayEndText.text = $"Day {currentDay} has ended. Welcome to Day {currentDay + 1}!";
+        if (AreAllEnemiesDefeatedInSector(currentPlayerSector))
+        {
+            dayEndText.text = $"Day {currentDay} has ended. Welcome to Day {currentDay + 1}!";
+        }
+        else
+        {
+            dayEndText.text = $"Day {currentDay} has ended, but sector {currentPlayerSector.Name} is not fully cleared!";
+        }
+
         dayEndPopup.SetActive(true);
         Debug.Log($"Popup displayed for Day {currentDay}");
+
         yield return new WaitForSeconds(10f); // Wait for the popup duration
         dayEndPopup.SetActive(false);
         Debug.Log("Popup hidden.");
@@ -127,11 +181,47 @@ public class GameManager : MonoBehaviour
         manpowerManager.CalculateManpower(moraleManager.GetSummary());
         moraleManager.ResetSummary();
         UpdateManpowerUI();
+        Debug.Log($"Handled new day: {currentDay}. Manpower updated.");
 
-        int enemiesToSpawn = 10; // Fixed amount of enemies to spawn
-        SpawnEnemiesAtDayStart(enemiesToSpawn);
+        // Check if all enemies in the current sector are defeated
+        if (!AreAllEnemiesDefeatedInSector(currentPlayerSector))
+        {
+            Debug.LogWarning($"Day {currentDay}: Cannot move to the next sector. Enemies still present in sector {currentPlayerSector.Name}.");
+            return; // Do not proceed to claim the next sector
+        }
 
-        Debug.Log($"New Day: {currentDay}. {enemiesToSpawn} enemies spawned at {currentPlayerSector.Name}.");
+        // Move to the next sector if possible
+        Sector nextPlayerSector = GetClosestEnemySector();
+        if (nextPlayerSector != null)
+        {
+            nextPlayerSector.Controlled = true;
+            nextPlayerSector.Owner = 1;
+            currentPlayerSector = nextPlayerSector;
+
+            StartCoroutine(MoveCameraToSector(nextPlayerSector, 2f));
+            MoveSoldiersToSector(nextPlayerSector);
+
+            int enemiesToSpawn = Mathf.Clamp(currentDay * 2, 10, 30);
+            SpawnEnemiesAtDayStart(enemiesToSpawn);
+
+            Debug.Log($"New Day: {currentDay}. Sector {nextPlayerSector.Name} claimed. {enemiesToSpawn} enemies spawned.");
+        }
+        else
+        {
+            Debug.LogWarning("No more sectors to claim. Player might have won!");
+        }
+    }
+
+    private bool AreAllEnemiesDefeatedInSector(Sector sector)
+    {
+        foreach (var enemy in enemies)
+        {
+            if (Vector3.Distance(enemy.transform.position, sector.Position) < 10f) // Adjust range as needed
+            {
+                return false; // An enemy is still within the sector
+            }
+        }
+        return true;
     }
 
     private void UpdateLighting()
@@ -141,13 +231,34 @@ public class GameManager : MonoBehaviour
 
     private void SimulateCombat()
     {
-        foreach (var soldier in soldiers)
+        // Clean up destroyed soldiers
+        for (int i = soldiers.Count - 1; i >= 0; i--)
         {
-            soldier.PerformAction(enemies);
-            AttemptSectorControl(soldier);
+            if (soldiers[i] == null || soldiers[i].Health <= 0)
+            {
+                Debug.Log($"Soldier removed: {soldiers[i]?.GetType().Name ?? "null"}");
+                soldiers.RemoveAt(i);
+            }
         }
 
-        foreach (var enemy in enemies)
+        // Soldiers attack enemies
+        foreach (var soldier in new List<ISoldier>(soldiers))
+        {
+            soldier.PerformAction(enemies);
+        }
+
+        // Clean up destroyed enemies
+        for (int i = enemies.Count - 1; i >= 0; i--)
+        {
+            if (enemies[i] == null || enemies[i].Health <= 0)
+            {
+                Debug.Log($"Enemy removed.");
+                enemies.RemoveAt(i);
+            }
+        }
+
+        // Enemies attack soldiers
+        foreach (var enemy in new List<Enemy>(enemies))
         {
             enemy.PerformAction(soldiers);
         }
@@ -157,12 +268,18 @@ public class GameManager : MonoBehaviour
     {
         foreach (var sector in sectors)
         {
-            if (!sector.Controlled && Vector3.Distance(soldier.Position, sector.GetBottomPosition()) < 1f)
+            if (!sector.Controlled &&
+                Vector3.Distance(soldier.Position, sector.GetBottomPosition()) < 1f &&
+                AreAllEnemiesDefeatedInSector(sector))
             {
                 sector.Controlled = true;
                 sector.Owner = 1;
                 currentPlayerSector = sector;
                 Debug.Log($"Sector {sector.Name} claimed by the player.");
+            }
+            else if (!sector.Controlled)
+            {
+                Debug.Log($"Sector {sector.Name} cannot be claimed yet. Enemies still present.");
             }
         }
     }
@@ -175,16 +292,20 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        Debug.Log($"Attempting to spawn {amount} enemies in {currentPlayerSector.Name}");
+
         Vector3 topPosition = currentPlayerSector.GetTopPosition();
-        Debug.Log($"Spawning enemies at the TOP of sector {currentPlayerSector.Name}, position: {topPosition}");
+        Debug.Log($"Spawning {amount} enemies at the TOP of sector {currentPlayerSector.Name}, position: {topPosition}");
 
         for (int i = 0; i < amount; i++)
         {
-            // Adjust to spawn more to the left
-            Vector3 offsetPosition = new Vector3(topPosition.x - (amount * 0.75f) + (i * 1.5f), topPosition.y, -1);
+            Vector3 offsetPosition = new Vector3(
+                topPosition.x - (amount * 0.75f) + (i * 1.5f),
+                topPosition.y,
+                -1
+            );
 
             GameObject enemyObject = Instantiate(enemyPrefab, offsetPosition, Quaternion.identity, spawnParent);
-
             Enemy enemy = enemyObject.GetComponent<Enemy>();
             if (enemy != null)
             {
@@ -195,14 +316,14 @@ public class GameManager : MonoBehaviour
                 Debug.LogError("Enemy prefab is missing the Enemy script component!");
             }
         }
-        Debug.Log($"{amount} enemies spawned at the TOP of sector {currentPlayerSector.Name}");
+        Debug.Log($"{amount} enemies successfully spawned.");
     }
 
     private Sector GetClosestEnemySector()
     {
         foreach (var sector in sectors)
         {
-            if (!sector.Controlled)
+            if (!sector.Controlled && sector.Owner != 1) // Ensure this logic works
             {
                 return sector;
             }
@@ -223,6 +344,12 @@ public class GameManager : MonoBehaviour
         Vector3 spawnPosition = currentPlayerSector.GetBottomPosition();
         manpowerManager.PurchaseSoldier(type, spawnPosition, soldiers);
         UpdateManpowerUI();
+    }
+
+    public void RemoveSoldier(ISoldier soldier)
+    {
+        soldiers.Remove(soldier);
+        Debug.Log($"Soldier removed: {soldier.GetType().Name}");
     }
 
     private void UpdateManpowerUI()

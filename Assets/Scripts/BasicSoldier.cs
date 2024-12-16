@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public class BasicSoldier : MonoBehaviour, IBasicSoldier
 {
@@ -10,7 +12,34 @@ public class BasicSoldier : MonoBehaviour, IBasicSoldier
 
     public void PerformAction(List<Enemy> enemies)
     {
-        PerformBasicAction(enemies);
+
+        if (this == null) return; // Ensure the soldier is not destroyed
+
+        if (Morale < 3)
+        {
+            Debug.Log("Basic soldier defects due to low morale.");
+            Destroy(gameObject);
+            return;
+        }
+
+        Enemy nearestEnemy = FindNearestEnemy(enemies);
+        if (nearestEnemy != null)
+        {
+            int damage = Morale > 8 ? 15 : 10; // Higher damage for high morale
+            nearestEnemy.TakeDamage(damage);
+            Debug.Log($"Basic soldier attacks the nearest enemy with morale: {Morale}");
+        }
+    }
+
+    public void TakeDamage(int damage)
+    {
+        Health -= damage;
+        Morale = Mathf.Max(0, Morale - 1); // Reduce morale when taking damage
+        if (Health <= 0)
+        {
+            Debug.Log("Basic soldier defeated.");
+            Destroy(gameObject);
+        }
     }
 
     public void PerformBasicAction(List<Enemy> enemies)
@@ -40,13 +69,4 @@ public class BasicSoldier : MonoBehaviour, IBasicSoldier
         return nearestEnemy;
     }
 
-    public void TakeDamage(int damage)
-    {
-        Health -= damage;
-        if (Health <= 0)
-        {
-            Debug.Log("Basic soldier defeated.");
-            Destroy(gameObject);
-        }
-    }
 }

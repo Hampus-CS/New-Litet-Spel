@@ -320,10 +320,10 @@ RectTransform:
   - {fileID: 2142209405}
   m_Father: {fileID: 342981631}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -555, y: -339}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -880, y: -435.5}
+  m_SizeDelta: {x: -1760, y: -1050}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &206837278
 MonoBehaviour:
@@ -22961,10 +22961,10 @@ RectTransform:
   - {fileID: 663374879}
   m_Father: {fileID: 342981631}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -555, y: -298}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -880, y: -379.99997}
+  m_SizeDelta: {x: -1760, y: -1050}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &943412665
 MonoBehaviour:
@@ -23084,6 +23084,7 @@ MonoBehaviour:
   advancedSoldierPrefab: {fileID: 6784670811866272394, guid: 743ad9ae44ac01f468bc29fdad970132, type: 3}
   enemyPrefab: {fileID: 3549633331151775792, guid: 5555bba006c8bac40b0e34e90442c297, type: 3}
   spawnParent: {fileID: 33570751}
+  mainCamera: {fileID: 519420031}
   manpowerText: {fileID: 1377936045}
   basicSoldierButton: {fileID: 943412665}
   advancedSoldierButton: {fileID: 206837278}
@@ -23225,10 +23226,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 342981631}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -539, y: 335}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -860, y: 515}
+  m_SizeDelta: {x: -1720, y: -1030}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1377936045
 MonoBehaviour:

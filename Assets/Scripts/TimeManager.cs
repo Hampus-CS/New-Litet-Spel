@@ -4,7 +4,7 @@ using UnityEngine.Rendering.Universal;
 public class TimeManager : MonoBehaviour
 {
     public Light2D globalLight;
-    public float dayDuration = 120f;
+    public float dayDuration = 15f;
     private float currentTime;
 
     private float dayStart = 6f;
@@ -16,7 +16,7 @@ public class TimeManager : MonoBehaviour
     {
         if (dayDuration <= 0f)
         {
-            dayDuration = 120f;
+            dayDuration = 15f;
         }
 
         currentTime = dayStart;
@@ -31,7 +31,7 @@ public class TimeManager : MonoBehaviour
         // Add safety checks for Time.deltaTime and dayDuration
         if (dayDuration <= 0f)
         {
-            Debug.LogError("Invalid dayDuration. Cannot advance time.");
+            //Debug.LogError("Invalid dayDuration. Cannot advance time.");
             return false;
         }
 

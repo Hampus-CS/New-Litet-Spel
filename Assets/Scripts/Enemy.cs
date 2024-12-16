@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Diagnostics;
+using Debug = UnityEngine.Debug;
 
 public class Enemy : MonoBehaviour
 {
@@ -22,11 +24,13 @@ public class Enemy : MonoBehaviour
 
     public void PerformAction(List<ISoldier> soldiers)
     {
+        if (this == null) return; // Ensure the enemy is not destroyed
+
         ISoldier nearestSoldier = FindNearestSoldier(soldiers);
-        if (nearestSoldier != null)
+        if (nearestSoldier != null && nearestSoldier.Health > 0)
         {
-            nearestSoldier.Morale -= 1; // Reduce soldier morale
-            nearestSoldier.TakeDamage(10); // Attack the soldier
+            nearestSoldier.TakeDamage(10); // Deal damage
+            nearestSoldier.Morale = Mathf.Max(0, nearestSoldier.Morale - 1); // Reduce morale
             Debug.Log("Enemy attacks the nearest soldier.");
         }
     }
@@ -38,6 +42,8 @@ public class Enemy : MonoBehaviour
 
         foreach (var soldier in soldiers)
         {
+            if (soldier == null) continue; // Skip destroyed soldiers
+
             float distance = Vector3.Distance(transform.position, soldier.Position);
             if (distance < shortestDistance)
             {
